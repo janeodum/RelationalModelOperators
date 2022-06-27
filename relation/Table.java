@@ -220,6 +220,7 @@ public class Table
         List <Comparable []> rows = new ArrayList <> ();
 
         //  T O   B E   I M P L E M E N T E D 
+        
 
         return new Table (name + count++, attribute, domain, key, rows);
     } // select
@@ -241,7 +242,14 @@ public class Table
 
         //  T O   B E   I M P L E M E N T E D 
 
-        for (Compareable[] )
+        for (Comparable[] temp : this.tuples) {
+            rows.add(temp);
+        } // for
+
+        for (Comparable[] temp : table2.tuples) {
+            rows.add(temp);
+        } // for
+
 
         return new Table (name + count++, attribute, domain, key, rows);
     } // union
