@@ -255,7 +255,14 @@ public class Table
 
         List <Comparable []> rows = new ArrayList <> ();
 
-        //  T O   B E   I M P L E M E N T E D 
+        /* Selects elements from table 1 and table 2, returns rows from table 1
+        but not in table 2
+        */
+           //Loop iterating through and evaluating if key is in table 2 then not added
+        for (Map.Entry<KeyType, Comparable[]> e : index.entrySet())
+                if (!table2.index.containsKey(e.getKey())) {
+				rows.add(e.getValue());
+			}
 
         return new Table (name + count++, attribute, domain, key, rows);
     } // minus
