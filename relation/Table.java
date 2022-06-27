@@ -180,6 +180,11 @@ public class Table
         List <Comparable []> rows = new ArrayList <> ();
 
         //  T O   B E   I M P L E M E N T E D 
+        // Goes through the tuples
+        for (int i = 0; i < tuples.size(); i++) {
+            rows.add(extract(tuples.get(i), attrs));
+        }
+
 
         return new Table (name + count++, attrs, colDomain, newKey, rows);
     } // project
