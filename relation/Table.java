@@ -274,9 +274,9 @@ public class Table
         but not in table 2
         */
            //Loop iterating through and evaluating if key is in table 2 then not added
-        for (Map.Entry<KeyType, Comparable[]> e : index.entrySet())
-                if (!table2.index.containsKey(e.getKey())) {
-				rows.add(e.getValue());
+        for (Map.Entry<KeyType, Comparable[]> t : index.entrySet())
+                if (!table2.index.containsKey(t.getKey())) {
+				rows.add(t.getValue());
 			}
 
         return new Table (name + count++, attribute, domain, key, rows);
