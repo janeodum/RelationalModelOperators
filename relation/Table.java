@@ -241,11 +241,12 @@ public class Table
 
         //  T O   B E   I M P L E M E N T E D 
 
-        // A
+        // Adds all rows from first table
         for (Comparable[] temp : this.tuples) {
             rows.add(temp);
         } // for
 
+        // Adds all rows from second table 
         for (Comparable[] temp : table2.tuples) {
             rows.add(temp);
         } // for
@@ -329,10 +330,6 @@ public class Table
 	    {
 	    	return null;
 	    }
-	    	
-	
-		
-	
 
         return new Table (name + count++, concat (attribute, table2.attribute),
                                           concat (domain, table2.domain), key, rows);
