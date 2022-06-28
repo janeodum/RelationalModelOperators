@@ -274,10 +274,10 @@ public class Table
         but not in table 2
         */
            //Loop iterating through and evaluating if key is in table 2 then not added
-        for (Map.Entry<KeyType, Comparable[]> e : index.entrySet())
-                if (!table2.index.containsKey(e.getKey())) {
-				rows.add(e.getValue());
-			}
+        for (Comparable[] t : this.tuples){
+        	if (! table2.tuples.contains(t) && ! rows.contains(t))
+		
+        		rows.add(t);
 
         return new Table (name + count++, attribute, domain, key, rows);
     } // minus
@@ -303,8 +303,36 @@ public class Table
         var t_attrs = attributes1.split (" ");
         var u_attrs = attributes2.split (" ");
         var rows    = new ArrayList <Comparable []> ();
-
-        //  T O   B E   I M P L E M E N T E D 
+	
+	//All tables 
+         for(Comparable [] a1: this.tuples)
+	    {
+	    	for(Comparable [] a2 : table2.tuples)
+	    	{
+	    		for(Comparable [] b1 : a1)
+	    		{
+	    			for(Comparable [] b2 : a2)
+	    			{
+	    				if(b1.equals(b2))
+	    				{
+	    					Comparable [] both = Stream.concat(Arrays.stream(a1),
+						Arrays.stream(a2)).toArray(Comparable[]::new);
+	    				        rows.add(both);
+	    				}
+	    				break;	
+	    			}
+	    		}
+	        }
+	    }
+	    //other way
+	    if(rows.size() <= 0)
+	    {
+	    	return null;
+	    }
+	    	
+	
+		
+	
 
         return new Table (name + count++, concat (attribute, table2.attribute),
                                           concat (domain, table2.domain), key, rows);
