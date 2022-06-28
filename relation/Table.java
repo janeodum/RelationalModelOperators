@@ -220,6 +220,13 @@ public class Table
 
         //  T O   B E   I M P L E M E N T E D 
         
+        for (Comparable[] temp : tuples) {
+            Keytype tempKey = keyVal;
+            if (tempKey.equals(keyVal))
+            {
+                rows.add(temp);
+            } // if
+        } // for
 
         return new Table (name + count++, attribute, domain, key, rows);
     } // select
