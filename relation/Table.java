@@ -181,10 +181,9 @@ public class Table
 
         //  T O   B E   I M P L E M E N T E D 
         // Goes through the tuples
-        for (int i = 0; i < tuples.size(); i++) {
-            rows.add(extract(tuples.get(i), attrs));
-        }
-
+       for (Comparable[] temp: tuples) {
+            rows.add(extract(temp, attrs));
+       } // 
 
         return new Table (name + count++, attrs, colDomain, newKey, rows);
     } // project
@@ -242,6 +241,7 @@ public class Table
 
         //  T O   B E   I M P L E M E N T E D 
 
+        // A
         for (Comparable[] temp : this.tuples) {
             rows.add(temp);
         } // for
