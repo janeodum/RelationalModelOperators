@@ -68,7 +68,7 @@ public class Table
 
     /** The map type to be used for indices.  Change as needed.
      */
-    private static final MapType mType = MapType.NO_MAP;
+    private static final MapType mType = MapType.LINHASH_MAP;
 
     /************************************************************************************
      * Make a map (index) given the MapType.
@@ -221,7 +221,7 @@ public class Table
         //  T O   B E   I M P L E M E N T E D 
         
         for (Comparable[] temp : tuples) {
-            Keytype tempKey = keyVal;
+            KeyType tempKey = keyVal;
             if (tempKey.equals(keyVal))
             {
                 rows.add(temp);
@@ -282,10 +282,11 @@ public class Table
         but not in table 2
         */
            //Loop iterating through and evaluating if key is in table 2 then not added
-        for (Comparable[] t : this.tuples){
-        	if (! table2.tuples.contains(t) && ! rows.contains(t))
-		
-        		rows.add(t);
+        for (Comparable[] t : this.tuples) {
+            if (!table2.tuples.contains(t) && !rows.contains(t))
+
+                rows.add(t);
+        }
 
         return new Table (name + count++, attribute, domain, key, rows);
     } // minus
@@ -311,7 +312,7 @@ public class Table
         var t_attrs = attributes1.split (" ");
         var u_attrs = attributes2.split (" ");
         var rows    = new ArrayList <Comparable []> ();
-	
+	    /**
 	//All tables 
          for(Comparable [] a1: this.tuples)
 	    {
@@ -337,7 +338,7 @@ public class Table
 	    {
 	    	return null;
 	    }
-
+            **/
         return new Table (name + count++, concat (attribute, table2.attribute),
                                           concat (domain, table2.domain), key, rows);
     } // join
