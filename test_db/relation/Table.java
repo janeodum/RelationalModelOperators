@@ -10,7 +10,6 @@ import java.util.*;
 import java.util.function.*;
 import java.util.stream.*;
 
-import static java.lang.Boolean.*;
 import static java.lang.System.arraycopy;
 import static java.lang.System.out;
 
@@ -48,7 +47,7 @@ public class Table
     /**
      * Array of attribute names.
      */
-    private final String[] attribute;
+    private String[] attribute;
 
     /**
      * Array of attribute domains: a domain may be
@@ -56,17 +55,17 @@ public class Table
      * real types: Double, Float
      * string types: Character, String
      */
-    private final Class[] domain;
+    private Class[] domain;
 
     /**
      * Collection of tuples (data storage).
      */
-    private final List<Comparable[]> tuples;
+    private List<Comparable[]> tuples;
 
     /**
      * Primary key.
      */
-    private final String[] key;
+    private String[] key;
 
     /**
      * Flag to check if the attribute is present in the table.
@@ -76,7 +75,7 @@ public class Table
     /**
      * Index into tuples (maps key to tuple number).
      */
-    private final Map<KeyType, Comparable[]> index;
+    private Map<KeyType, Comparable[]> index;
 
     /**
      * The supported map types.
@@ -106,8 +105,6 @@ public class Table
 
     /************************************************************************************
      * Concatenate two arrays of type T to form a new wider array.
-     *
-     * @see http://stackoverflow.com/questions/80476/how-to-concatenate-two-arrays-in-java
      *
      * @param arr1 the first array
      * @param arr2 the second array
@@ -151,7 +148,7 @@ public class Table
      * @param _tuples    the list of tuples containing the data
      */
     public Table(String _name, String[] _attribute, Class[] _domain, String[] _key,
-            List<Comparable[]> _tuples) {
+                 List<Comparable[]> _tuples) {
         name = _name;
         attribute = _attribute;
         domain = _domain;
@@ -172,6 +169,7 @@ public class Table
         this(_name, attributes.split(" "), findClass(domains.split(" ")), _key.split(" "));
 
         out.println("DDL> create table " + name + " (" + attributes + ")");
+        tuples = null;
     } // constructor
 
     // ----------------------------------------------------------------------------------
@@ -204,7 +202,7 @@ public class Table
          *         // and retrieve the values.
          */
         if (flag) {
-            this.tuples.stream().forEach(item -> rows.add(extract(temp, attrs)));
+            this.tuples.stream().forEach(item -> rows.add(extract(item, attrs)));
         }
 
         return new Table(name + count++, attrs, colDomain, newKey, rows);
@@ -287,11 +285,12 @@ public class Table
                 }
 
             }
+            if (dup) {
+                // tuple is added once there is no duplicate
+                rows.add(temp);
+            }
         }
-        if (dup) {
-            // tuple is added once there is no duplicate
-            rows.add(temp);
-        }
+
 
         return new Table(name + count++, attribute, domain, key, rows);
     } // union
@@ -323,6 +322,7 @@ public class Table
         return new Table(name + count++, attribute, domain, key, rows);
     } // minus
 
+
     /************************************************************************************
      * Join this table and table2 by performing an "equi-join".  Tuples from both tables
      * are compared requiring attributes1 to equal attributes2.  Disambiguate attribute
@@ -331,54 +331,48 @@ public class Table
      *
      * #usage movie.join ("studioNo", "name", studio)
      *
-     * @param attribute1  the attributes of this table to be compared (Foreign Key)
-     * @param attribute2  the attributes of table2 to be compared (Primary Key)
+     * @param attributes1  the attributes of this table to be compared (Foreign Key)
+     * @param attributes2  the attributes of table2 to be compared (Primary Key)
      * @param table2      the rhs table in the join operation
-     * @return  a table with tuples satisfying the equality predicate
+     * @return a table with tuples satisfying the equality predicate
      */
-    public Table join (String attributes1, String attributes2, Table table2)
-    {
-        out.println ("RA> " + name + ".join (" + attributes1 + ", " + attributes2 + ", "
-                                               + table2.name + ")");
+    public Comparable[] join(String attributes1, String attributes2, Table table2) {
+        out.println("RA> " + name + ".join (" + attributes1 + ", " + attributes2 + ", "
+                + table2.name + ")");
 
-        String [] t_attrs = attributes1.split (" ");
-        String [] u_attrs = attributes2.split (" ");
-        List <Comparable> rows    = new ArrayList <> ();
-        
-        int [] t_attrsPos = this.match(t_attrs);
-        int [] u_attrsPos = table2.match(u_attrs);
+        String[] t_attrs = attributes1.split(" ");
+        String[] u_attrs = attributes2.split(" ");
+        List<Comparable> rows = new ArrayList<>();
+
+        int[] t_attrsPos = this.match(t_attrs);
+        int[] u_attrsPos = table2.match(u_attrs);
 
         // get the domain of the two tables to join so that we compare before performing join operation
         //in order to save cost
-        final Class [] table1Domain = this.extractDom(t_attrsPos, this.domain);
-        final Class [] table2Domain = this.extractDom(u_attrsPos, table2.domain);
-        String [] table2Attributes = new String [table2.attribute.length];
+        final Class[] table1Domain = this.extractDom(t_attrsPos, this.domain);
+        final Class[] table2Domain = this.extractDom(u_attrsPos, table2.domain);
+        String[] table2Attributes = new String[table2.attribute.length];
 
-        if(table1Domain.equals(table2Domain))
-        {
+        if (table1Domain.equals(table2Domain)) {
 
-	        //All tables 
-            for(Comparable [] a1: this.tuples)
-            {
-                for(Comparable [] a2 : table2.tuples)
-                {
+            //All tables
+            for (Comparable[] a1 : this.tuples) {
+                for (Comparable[] a2 : table2.tuples) {
                     int thereIsMatch = 0;
-                    for(int j = 0; j < t_attrsPos.length; j++)
-                    {
-                        if(a1[(int) t_attrsPos[j]].equals(a2[(int)u_attrsPos[j]]))
-                        {
+                    for (int j = 0; j < t_attrsPos.length; j++) {
+                        if (a1[(int) t_attrsPos[j]].equals(a2[(int) u_attrsPos[j]])) {
                             thereIsMatch++;
                         }
-                        if(j == t_attrsPos.length -1 && thereIsMatch == t_attrsPos.length){
+                        if (j == t_attrsPos.length - 1 && thereIsMatch == t_attrsPos.length) {
                             rows.add(ArrayUtil.concat(a1, a2));
                         }
-                    
+
                     }
                 }
             }
 
             // for the purpsoe of disambiquation append 2 to duplicate attribute
-            for (int j = 0; j < table2.attribute.length; j ++) {
+            for (int j = 0; j < table2.attribute.length; j++) {
                 table2Attributes[j] = table2.attribute[j];
             }
 
@@ -389,369 +383,365 @@ public class Table
                     }
                 }
             }
-            
-        
-            
-        return new Table (name + count++, concat (attribute, table2Attributes),
-                                          concat (domain, table2.domain), key, rows);
-    } // join
 
-    /************************************************************************************
-     * Join this table and table2 by performing an "equi-join".  Same as above, but implemented
-     * using an Index Join algorithm.
-     *
-     * @param attribute1  the attributes of this table to be compared (Foreign Key)
-     * @param attribute2  the attributes of table2 to be compared (Primary Key)
-     * @param table2      the rhs table in the join operation
-     * @return  a table with tuples satisfying the equality predicate
-     */
-    public Table i_join (String attributes1, String attributes2, Table table2)
-    {
-        List <Comparable []> rows = new ArrayList <> ();
 
-        if(mType != MapType.TREE_MAP)
+            return new Table(name + count++, concat(attribute, table2Attributes),
+                    concat(domain, table2.domain), key, rows);
+        } // join
+
+        /************************************************************************************
+         * Join this table and table2 by performing an "equi-join".  Same as above, but implemented
+         * using an Index Join algorithm.
+         *
+         * @param attributes1  the attributes of this table to be compared (Foreign Key)
+         * @param attributes2  the attributes of table2 to be compared (Primary Key)
+         * @param table2      the rhs table in the join operation
+         * @return a table with tuples satisfying the equality predicate
+         */
+        public Table i_join (String attributes1, String attributes2, Table table2)
         {
-            String [] t_attrs = attributes1.split (" ");
-            String [] u_attrs = attributes2.split (" ");
+            List<Comparable[]> r = new ArrayList<>();
 
-            String [] table2Attributes = new String [table2.attribute.length];
+            if (mType != MapType.TREE_MAP) {
+                String[] t_attrs2 = attributes1.split(" ");
+                String[] u_attrs2 = attributes2.split(" ");
 
-            if (u_attrs.length == table2.key.length && 0 == new KeyType(table2.key).compareTo(new KeyType(u_attrs)))
-            {
-                int [] t_attrsPos = this.match(t_attrs);
-                
+                String[] table2Attributes2 = new String[table2.attribute.length];
 
-                for (int i = 0; i < this.tuples.size(); i++)
-                {
-                    Comparable [] firstData = new Comparable[t_attrsPos.length];
-                    for ( int k = 0; k < firstData.length; k++)
-                    {
-                        firstData[k] = this.tuples.get(i)[t_attrsPos[k]];
+                if (u_attrs.length == table2.key.length && 0 == new KeyType(table2.key).compareTo(new KeyType(u_attrs))) {
+                    int[] t_attrsPos2 = this.match(t_attrs2);
 
+
+                    for (int i = 0; i < this.tuples.size(); i++) {
+                        Comparable[] firstData = new Comparable[t_attrsPos2.length];
+                        for (int k = 0; k < firstData.length; k++) {
+                            firstData[k] = this.tuples.get(i)[t_attrsPos2[k]];
+
+                        }//for
+                        //Concats the rest of the row and append it to the result
+                        Comparable[] secondData = table2.index.get(new KeyType(firstData));
+                        if (secondData != null) {
+                            rows.add(ArrayUtil.concat(this.tuples.get(i), secondData));
+                        }//if
                     }//for
-                    //Concats the rest of the row and append it to the result
-                    Comparable [] secondData = table2.index.get(new KeyType(firstData));
-                    if (secondData != null)
-                    {
-                        rows.add(ArrayUtil.concat(this.tuples.get(i), secondData));
-                    }//if
-                }//for
-            }//if
-            else
-            {
-                out.println("Tables cannot be joined");
-                return null;
-            }
+                }//if
+                else {
+                    out.println("Tables cannot be joined");
+                    return null;
+                }
 
-            // for the purpsoe of disambiquation append 2 to duplicate attribute
-            for (int j = 0; j < table2.attribute.length; j ++) {
-                table2Attributes[j] = table2.attribute[j];
-            }
+                // for the purpsoe of disambiquation append 2 to duplicate attribute
+                for (int j = 0; j < table2.attribute.length; j++) {
+                    table2Attributes2[j] = table2.attribute[j];
+                }
 
-            for (int attribute2 = 0; attribute2 < table2Attributes.length; attribute2++) {
-                for (int attribute1 = 0; attribute1 < this.attribute.length; attribute1++) {
-                    if (this.attribute[attribute1].equalsIgnoreCase(table2Attributes[attribute2])) {
-                        table2Attributes[attribute2] = table2Attributes[attribute2] + "2";
+                for (int attribute2 = 0; attribute2 < table2Attributes.length; attribute2++) {
+                    for (int attribute1 = 0; attribute1 < this.attribute.length; attribute1++) {
+                        if (this.attribute[attribute1].equalsIgnoreCase(table2Attributes2[attribute2])) {
+                            table2Attributes2[attribute2] = table2Attributes2[attribute2] + "2";
+                        }
                     }
                 }
+
+                Table result = new Table(name + count++, ArrayUtil.concat(attribute, table2Attributes2),
+                        ArrayUtil.concat(domain, table2.domain), this.key, r);
+                return result;
+            } else {
+                out.println("Please select an index map.");
+                Table result = new Table(name + count++, attribute,
+                        domain, this.key, r);
+                return result;
             }
 
-            Table result = new Table (name + count++, ArrayUtil.concat(attribute, attributesTable2),
-ArrayUtil.concat (domain, table2.domain), this.key, rows);
-            return result;
-                }
-        else
-        {
-            out.println("Please select an index map.");
-            Table result = new Table (name + count++, attribute,
-            domain, this.key, rows);
-            return result;
-        }
 
+        } // i_join
 
-        
-    } // i_join
+        /************************************************************************************
+         * Join this table and table2 by performing an "equi-join". Same as above, but
+         * implemented
+         * using a Hash Join algorithm.
+         *
+         * @param attribute1 the attributes of this table to be compared (Foreign Key)
+         * @param attribute2 the attributes of table2 to be compared (Primary Key)
+         * @param table2     the rhs table in the join operation
+         * @return a table with tuples satisfying the equality predicate
+         */
+        public Table h_join (String attributes1, String attributes2, Table table2){
 
-    /************************************************************************************
-     * Join this table and table2 by performing an "equi-join". Same as above, but
-     * implemented
-     * using a Hash Join algorithm.
-     *
-     * @param attribute1 the attributes of this table to be compared (Foreign Key)
-     * @param attribute2 the attributes of table2 to be compared (Primary Key)
-     * @param table2     the rhs table in the join operation
-     * @return a table with tuples satisfying the equality predicate
-     */
-    public Table h_join(String attributes1, String attributes2, Table table2) {
+            // D O N O T I M P L E M E N T
 
-        // D O N O T I M P L E M E N T
+            return null;
+        } // h_join
 
-        return null;
-    } // h_join
+        /************************************************************************************
+         * Join this table and table2 by performing an "natural join". Tuples from both
+         * tables
+         * are compared requiring common attributes to be equal. The duplicate column is
+         * also
+         * eliminated.
+         *
+         * #usage movieStar.join (starsIn)
+         *
+         * @param table2 the rhs table in the join operation
+         * @return a table with tuples satisfying the equality predicate
+         */
+        public Table join (Table table2){
+            out.println("RA> " + name + ".join (" + table2.name + ")");
 
-    /************************************************************************************
-     * Join this table and table2 by performing an "natural join". Tuples from both
-     * tables
-     * are compared requiring common attributes to be equal. The duplicate column is
-     * also
-     * eliminated.
-     *
-     * #usage movieStar.join (starsIn)
-     *
-     * @param table2 the rhs table in the join operation
-     * @return a table with tuples satisfying the equality predicate
-     */
-    public Table join(Table table2) {
-        out.println("RA> " + name + ".join (" + table2.name + ")");
+            var rows = new ArrayList<Comparable[]>();
 
-        var rows = new ArrayList<Comparable[]>();
+            // T O B E I M P L E M E N T E D
 
-        // T O B E I M P L E M E N T E D
+            // FIX - eliminate duplicate columns
+            return new Table(name + count++, concat(attribute, table2.attribute),
+                    concat(domain, table2.domain), key, rows);
+        } // join
 
-        // FIX - eliminate duplicate columns
-        return new Table(name + count++, concat(attribute, table2.attribute),
-                concat(domain, table2.domain), key, rows);
-    } // join
-
-    /************************************************************************************
-     * Return the column position for the given attribute name.
-     *
-     * @param attr the given attribute name
-     * @return a column position
-     */
-    public int col(String attr) {
-        for (var i = 0; i < attribute.length; i++) {
-            if (attr.equals(attribute[i]))
-                return i;
-        } // for
-
-        return -1; // not found
-    } // col
-
-    /************************************************************************************
-     * Insert a tuple to the table.
-     *
-     * #usage movie.insert ("'Star_Wars'", 1977, 124, "T", "Fox", 12345)
-     *
-     * @param tup the array of attribute values forming the tuple
-     * @return whether insertion was successful
-     */
-    public boolean insert(Comparable[] tup) {
-        out.println("DML> insert into " + name + " values ( " + Arrays.toString(tup) + " )");
-
-        if (typeCheck(tup)) {
-            tuples.add(tup);
-            var keyVal = new Comparable[key.length];
-            var cols = match(key);
-            for (var j = 0; j < keyVal.length; j++)
-                keyVal[j] = tup[cols[j]];
-            if (mType != MapType.NO_MAP)
-                index.put(new KeyType(keyVal), tup);
-            return true;
-        } else {
-            return false;
-        } // if
-    } // insert
-
-    /************************************************************************************
-     * Get the name of the table.
-     *
-     * @return the table's name
-     */
-    public String getName() {
-        return name;
-    } // getName
-
-    /************************************************************************************
-     * Print this table.
-     */
-    public void print() {
-        out.println("\n Table " + name);
-        out.print("|-");
-        out.print("---------------".repeat(attribute.length));
-        out.println("-|");
-        out.print("| ");
-        for (var a : attribute)
-            out.printf("%15s", a);
-        out.println(" |");
-        out.print("|-");
-        out.print("---------------".repeat(attribute.length));
-        out.println("-|");
-        for (var tup : tuples) {
-            out.print("| ");
-            for (var attr : tup)
-                out.printf("%15s", attr);
-            out.println(" |");
-        } // for
-        out.print("|-");
-        out.print("---------------".repeat(attribute.length));
-        out.println("-|");
-    } // print
-
-    /************************************************************************************
-     * Print this table's index (Map).
-     */
-    public void printIndex() {
-        out.println("\n Index for " + name);
-        out.println("-------------------");
-        if (mType != MapType.NO_MAP) {
-            for (var e : index.entrySet()) {
-                out.println(e.getKey() + " -> " + Arrays.toString(e.getValue()));
+        /************************************************************************************
+         * Return the column position for the given attribute name.
+         *
+         * @param attr the given attribute name
+         * @return a column position
+         */
+        public int col (String attr){
+            for (int i = 0; i < attribute.length; i++) {
+                if (attr.equals(attribute[i]))
+                    return i;
             } // for
-        } // if
-        out.println("-------------------");
-    } // printIndex
 
-    /************************************************************************************
-     * Load the table with the given name into memory.
-     *
-     * @param name the name of the table to load
-     */
-    public static Table load(String name) {
-        Table tab = null;
-        try {
-            ObjectInputStream ois = new ObjectInputStream(new FileInputStream(DIR + name + EXT));
-            tab = (Table) ois.readObject();
-            ois.close();
-        } catch (IOException ex) {
-            out.println("load: IO Exception");
-            ex.printStackTrace();
-        } catch (ClassNotFoundException ex) {
-            out.println("load: Class Not Found Exception");
-            ex.printStackTrace();
-        } // try
-        return tab;
-    } // load
+            return -1; // not found
+        } // col
 
-    /************************************************************************************
-     * Save this table in a file.
-     */
-    public void save() {
-        try {
-            var oos = new ObjectOutputStream(new FileOutputStream(DIR + name + EXT));
-            oos.writeObject(this);
-            oos.close();
-        } catch (IOException ex) {
-            out.println("save: IO Exception");
-            ex.printStackTrace();
-        } // try
-    } // save
+        /************************************************************************************
+         * Insert a tuple to the table.
+         *
+         * #usage movie.insert ("'Star_Wars'", 1977, 124, "T", "Fox", 12345)
+         *
+         * @param tup the array of attribute values forming the tuple
+         * @return whether insertion was successful
+         */
+        public boolean insert (Comparable[]tup){
+            out.println("DML> insert into " + name + " values ( " + Arrays.toString(tup) + " )");
 
-    // ----------------------------------------------------------------------------------
-    // Private Methods
-    // ----------------------------------------------------------------------------------
-
-    /************************************************************************************
-     * Determine whether the two tables (this and table2) are compatible, i.e., have
-     * the same number of attributes each with the same corresponding domain.
-     *
-     * @param table2 the rhs table
-     * @return whether the two tables are compatible
-     */
-    private boolean compatible(Table table2) {
-        if (domain.length != table2.domain.length) {
-            out.println("compatible ERROR: table have different arity");
-            return false;
-        } // if
-        for (var j = 0; j < domain.length; j++) {
-            if (domain[j] != table2.domain[j]) {
-                out.println("compatible ERROR: tables disagree on domain " + j);
+            if (typeCheck(tup)) {
+                tuples.add(tup);
+                var keyVal = new Comparable[key.length];
+                var cols = match(key);
+                for (var j = 0; j < keyVal.length; j++)
+                    keyVal[j] = tup[cols[j]];
+                if (mType != MapType.NO_MAP)
+                    index.put(new KeyType(keyVal), tup);
+                return true;
+            } else {
                 return false;
             } // if
-        } // for
-        return true;
-    } // compatible
+        } // insert
 
-    /************************************************************************************
-     * Match the column and attribute names to determine the domains.
-     *
-     * @param column the array of column names
-     * @return an array of column index positions
-     */
-    private int[] match(String[] column) {
-        int[] colPos = new int[column.length];
+        /************************************************************************************
+         * Get the name of the table.
+         *
+         * @return the table's name
+         */
+        public String getName () {
+            return name;
+        } // getName
 
-        for (var j = 0; j < column.length; j++) {
-            var matched = false;
-            for (var k = 0; k < attribute.length; k++) {
-                if (column[j].equals(attribute[k])) {
-                    matched = true;
-                    colPos[j] = k;
-                } // for
+        /************************************************************************************
+         * Print this table.
+         */
+        public void print () {
+            out.println("\n Table " + name);
+            out.print("|-");
+            out.print("---------------".repeat(attribute.length));
+            out.println("-|");
+            out.print("| ");
+            for (var a : attribute)
+                out.printf("%15s", a);
+            out.println(" |");
+            out.print("|-");
+            out.print("---------------".repeat(attribute.length));
+            out.println("-|");
+            for (var tup : tuples) {
+                out.print("| ");
+                for (var attr : tup)
+                    out.printf("%15s", attr);
+                out.println(" |");
             } // for
-            if (!matched) {
-                out.println("match: domain not found for " + column[j]);
+            out.print("|-");
+            out.print("---------------".repeat(attribute.length));
+            out.println("-|");
+        } // print
+
+        /************************************************************************************
+         * Print this table's index (Map).
+         */
+        public void printIndex () {
+            out.println("\n Index for " + name);
+            out.println("-------------------");
+            if (mType != MapType.NO_MAP) {
+                for (var e : index.entrySet()) {
+                    out.println(e.getKey() + " -> " + Arrays.toString(e.getValue()));
+                } // for
             } // if
-        } // for
+            out.println("-------------------");
+        } // printIndex
 
-        return colPos;
-    } // match
-
-    /************************************************************************************
-     * Extract the attributes specified by the column array from tuple t.
-     *
-     * @param t      the tuple to extract from
-     * @param column the array of column names
-     * @return a smaller tuple extracted from tuple t
-     */
-    private Comparable[] extract(Comparable[] t, String[] column) {
-        var tup = new Comparable[column.length];
-        var colPos = match(column);
-        for (var j = 0; j < column.length; j++)
-            tup[j] = t[colPos[j]];
-        return tup;
-    } // extract
-
-    /************************************************************************************
-     * Check the size of the tuple (number of elements in list) as well as the type
-     * of
-     * each value to ensure it is from the right domain.
-     *
-     * @param t the tuple as a list of attribute values
-     * @return whether the tuple has the right size and values that comply
-     *         with the given domains
-     */
-    private boolean typeCheck(Comparable[] t) {
-        // T O B E I M P L E M E N T E D
-
-        return true;
-    } // typeCheck
-
-    /************************************************************************************
-     * Find the classes in the "java.lang" package with given names.
-     *
-     * @param className the array of class name (e.g., {"Integer", "String"})
-     * @return an array of Java classes
-     */
-    private static Class[] findClass(String[] className) {
-        var classArray = new Class[className.length];
-
-        for (var i = 0; i < className.length; i++) {
+        /************************************************************************************
+         * Load the table with the given name into memory.
+         *
+         * @param name the name of the table to load
+         */
+        public static Table load (String name){
+            Table tab = null;
             try {
-                classArray[i] = Class.forName("java.lang." + className[i]);
+                ObjectInputStream ois = new ObjectInputStream(new FileInputStream(DIR + name + EXT));
+                tab = (Table) ois.readObject();
+                ois.close();
+            } catch (IOException ex) {
+                out.println("load: IO Exception");
+                ex.printStackTrace();
             } catch (ClassNotFoundException ex) {
-                out.println("findClass: " + ex);
+                out.println("load: Class Not Found Exception");
+                ex.printStackTrace();
             } // try
-        } // for
+            return tab;
+        } // load
 
-        return classArray;
-    } // findClass
+        /************************************************************************************
+         * Save this table in a file.
+         */
+        public void save () {
+            try {
+                var oos = new ObjectOutputStream(new FileOutputStream(DIR + name + EXT));
+                oos.writeObject(this);
+                oos.close();
+            } catch (IOException ex) {
+                out.println("save: IO Exception");
+                ex.printStackTrace();
+            } // try
+        } // save
 
-    /************************************************************************************
-     * Extract the corresponding domains.
-     *
-     * @param colPos the column positions to extract.
-     * @param group  where to extract from
-     * @return the extracted domains
-     */
-    private Class[] extractDom(int[] colPos, Class[] group) {
-        var obj = new Class[colPos.length];
+        // ----------------------------------------------------------------------------------
+        // Private Methods
+        // ----------------------------------------------------------------------------------
 
-        for (var j = 0; j < colPos.length; j++) {
-            obj[j] = group[colPos[j]];
-        } // for
+        /************************************************************************************
+         * Determine whether the two tables (this and table2) are compatible, i.e., have
+         * the same number of attributes each with the same corresponding domain.
+         *
+         * @param table2 the rhs table
+         * @return whether the two tables are compatible
+         */
+        private boolean compatible (Table table2){
+            if (domain.length != table2.domain.length) {
+                out.println("compatible ERROR: table have different arity");
+                return false;
+            } // if
+            for (var j = 0; j < domain.length; j++) {
+                if (domain[j] != table2.domain[j]) {
+                    out.println("compatible ERROR: tables disagree on domain " + j);
+                    return false;
+                } // if
+            } // for
+            return true;
+        } // compatible
 
-        return obj;
-    } // extractDom
+        /************************************************************************************
+         * Match the column and attribute names to determine the domains.
+         *
+         * @param column the array of column names
+         * @return an array of column index positions
+         */
+        private int[] match (String[]column)
+        {
+            int[] colPos = new int[column.length];
 
-} // Table class
+            for (int j = 0; j < column.length; j++) {
+                boolean matched = false;
+                for (int k = 0; k < attribute.length; k++) {
+                    if (column[j].equals(attribute[k])) {
+                        matched = true;
+                        colPos[j] = k;
+                        flag = true;
+                    } // for
+                } // for
+                if (!matched) {
+                    out.println("match: domain not found for " + column[j]);
+                    flag = false;
+                } // if
+            } // for
+
+            return colPos;
+        } // match
+
+
+        /************************************************************************************
+         * Extract the attributes specified by the column array from tuple t.
+         *
+         * @param t      the tuple to extract from
+         * @param column the array of column names
+         * @return a smaller tuple extracted from tuple t
+         */
+        private Comparable[] extract (Comparable[] t, String[]column){
+            var tup = new Comparable[column.length];
+            var colPos = match(column);
+            for (var j = 0; j < column.length; j++)
+                tup[j] = t[colPos[j]];
+            return tup;
+        } // extract
+
+        /************************************************************************************
+         * Check the size of the tuple (number of elements in list) as well as the type
+         * of
+         * each value to ensure it is from the right domain.
+         *
+         * @param t the tuple as a list of attribute values
+         * @return whether the tuple has the right size and values that comply
+         *         with the given domains
+         */
+        private boolean typeCheck (Comparable[]t){
+            // T O B E I M P L E M E N T E D
+
+            return true;
+        } // typeCheck
+
+        /************************************************************************************
+         * Find the classes in the "java.lang" package with given names.
+         *
+         * @param className the array of class name (e.g., {"Integer", "String"})
+         * @return an array of Java classes
+         */
+        private static Class[] findClass (String[] className){
+            Class[] classArray = new Class[className.length];
+
+            for (int i = 0; i < className.length; i++) {
+                try {
+                    classArray[i] = Class.forName("java.lang." + className[i]);
+                } catch (ClassNotFoundException ex) {
+                    out.println("findClass: " + ex);
+                } // try
+            } // for
+
+            return classArray;
+        } // findClass
+
+        /************************************************************************************
+         * Extract the corresponding domains.
+         *
+         * @param colPos the column positions to extract.
+         * @param group  where to extract from
+         * @return the extracted domains
+         */
+        private Class[] extractDom (int[] colPos, Class[] group)
+        {
+            Class[] obj = new Class[colPos.length];
+
+            for (int j = 0; j < colPos.length; j++) {
+                obj[j] = group[colPos[j]];
+            } // for
+
+            return obj;
+        } // extractDom
+
+    } // Table class
+}
