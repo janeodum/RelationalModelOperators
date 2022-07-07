@@ -88,7 +88,7 @@ public class Table
     /**
      * The map type to be used for indices. Change as needed.
      */
-    private static final MapType mType = MapType.NO_MAP;
+    private static final MapType mType = MapType.LINHASH_MAP;
 
     private Class[] domainsTable1s;
 
@@ -357,8 +357,6 @@ public class Table
         if(table1Domain.equals(table2Domain))
         {
 
-       
-	
 	        //All tables 
             for(Comparable [] a1: this.tuples)
             {
