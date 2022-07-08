@@ -11,6 +11,7 @@ You will be prompted to select a main function.
 	 - BpTreeMap.java
 	 - KeyType.java
 
-or simply run the lear hashing class
+or simply run the lear hashing class:
+
 	- cd src/main/java
 	- java LinHashMap.java
