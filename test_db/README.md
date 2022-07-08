@@ -12,5 +12,5 @@ You will be prompted to select a main function.
 	 - KeyType.java
 
 or simply run the lear hashing class
-cd src/main/java
-java LinHashMap.java
+	- cd src/main/java
+	- java LinHashMap.java
